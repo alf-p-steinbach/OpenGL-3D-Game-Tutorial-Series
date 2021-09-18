@@ -27,58 +27,58 @@ SOFTWARE.*/
 #include <Windows.h>
 #include <assert.h>
 
-LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	switch (msg)
-	{
-	case WM_DESTROY:
-	{
-		OWindow* window = (OWindow *)GetWindowLongPtr(hwnd, GWLP_USERDATA);
-		window->onDestroy();
-		break;
-	}
+#include <functional>       // std::invoke
 
-	default:
-		return DefWindowProc(hwnd, msg, wParam, lParam);
-	}
-	return NULL;
-}
+namespace {
+    LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
+    {
+        switch (msg)
+        {
+        case WM_CLOSE:
+        {
+            PostQuitMessage(EXIT_SUCCESS);
+            break;
+        }
 
+        default:
+            return DefWindowProc(hwnd, msg, wParam, lParam);
+        }
+        return NULL;
+    }
+
+}  // namespace <anon>
 
 OWindow::OWindow()
 {
-	WNDCLASSEX wc = {};
-	wc.cbSize = sizeof(WNDCLASSEX);
-	wc.lpszClassName = L"OGL3DWindow";
-	wc.lpfnWndProc = &WndProc;
+    static const ATOM window_class_id = std::invoke(
+        []() -> ATOM
+        {
+            WNDCLASSEX wc = {};
+            wc.cbSize = sizeof(WNDCLASSEX);
+            wc.lpszClassName = L"OGL3DWindow";
+            wc.lpfnWndProc = &WndProc;
+            return RegisterClassEx(&wc);
+        }
+    );
+    assert(window_class_id);
 
-	assert(RegisterClassEx(&wc));
+    const DWORD style = WS_OVERLAPPEDWINDOW & ~WS_THICKFRAME;
+    RECT rc = { 0,0,1024,768 };
+    AdjustWindowRect(&rc, style, false);
 
-	RECT rc = { 0,0,1024,768 };
-	AdjustWindowRect(&rc, WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU, false);
+    m_handle = CreateWindowEx(
+        DWORD(), MAKEINTATOM(window_class_id), L"PardCode | OpenGL 3D Game",
+        style, CW_USEDEFAULT, CW_USEDEFAULT, rc.right - rc.left, rc.bottom - rc.top,
+        HWND(), HMENU(), HINSTANCE(), nullptr);
+    assert(m_handle);
 
-	m_handle = CreateWindowEx(NULL, L"OGL3DWindow", L"PardCode | OpenGL 3D Game", WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU, CW_USEDEFAULT, CW_USEDEFAULT,
-		rc.right - rc.left, rc.bottom - rc.top, NULL, NULL, NULL, NULL);
+    SetWindowLongPtr(HWND(m_handle), GWLP_USERDATA, LONG_PTR(this));
 
-	assert(m_handle);
-
-	SetWindowLongPtr((HWND)m_handle, GWLP_USERDATA, (LONG_PTR)this);
-
-	ShowWindow((HWND)m_handle, SW_SHOW);
-	UpdateWindow((HWND)m_handle);
+    ShowWindow(HWND(m_handle), SW_SHOW);
+    UpdateWindow(HWND(m_handle));
 }
 
 OWindow::~OWindow()
 {
-	DestroyWindow((HWND)m_handle);
-}
-
-void OWindow::onDestroy()
-{
-	m_handle = nullptr;
-}
-
-bool OWindow::isClosed()
-{
-	return !m_handle;
+    DestroyWindow(HWND(m_handle));
 }

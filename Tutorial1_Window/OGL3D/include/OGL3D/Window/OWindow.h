@@ -23,16 +23,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.*/
 
 #pragma once
+#include <memory>       // std::default_delete
 
 class OWindow
 {
+    template<class> friend struct std::default_delete;
+    void* m_handle = nullptr;
+
+    ~OWindow();         // Private destructor -> Only dynamic allocation.
+
 public:
-	OWindow();
-	~OWindow();
-
-	void onDestroy();
-	bool isClosed();
-private:
-	void* m_handle = nullptr;
+    OWindow();
 };
-

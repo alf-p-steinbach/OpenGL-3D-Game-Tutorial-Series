@@ -29,13 +29,13 @@ class OWindow;
 class OGame
 {
 public:
-	OGame();
-	~OGame();
+    OGame();
+    ~OGame();
 
-	void run();
-	void quit();
+    void run();
+    void quit();
 protected:
-	bool m_isRunning = true;
-	std::unique_ptr<OWindow> m_display;
+    bool m_isRunning = true;
+    std::unique_ptr<OWindow> m_display;
 };
 
